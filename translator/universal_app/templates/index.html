@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper ASR</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <style>
+    audio#audio-player::-webkit-media-controls {
+        filter: invert(1); 
+    }
+    audio#audio-player::-webkit-media-controls-panel {
+        background-color: #dad8d875; 
+        
+    }
+    input[type="file"]::-webkit-file-upload-button {
+        background-color: #1a1a1a; 
+        color: var(--font-main-color);
+        border: none; 
+        padding: 10px; 
+        border-radius: 5px; 
+    }
+    :root {
+        --branding-color: #0A090D;
+        --secondary-color:#16131A;
+        --font-main-color:#8a8a8a;
+        --button-color:rgb(100, 82, 204);
+    }
+    body {
+        font-family: "Poppins", sans-serif;
+        color: var(--font-main-color);
+        background-color: var(--secondary-color);  
+    }
+    .container {
+        background-color: var(--branding-color);
+        border-radius: 20px;
+        padding: 50px;   
+        width: 900px; 
+        height: auto;
+        box-shadow: 0 3px 20px rgba(0, 0, 0, 0.37);
+    }
+    h1 {
+        font-family: monospace;
+        font-size: 38px;
+        margin-top: 50px;
+        margin-bottom: 50px;
+    }
+    h4 {
+        font-size: 18px;
+        color: var(--font-main-color);  
+        text-align: center;  
+    }
+    #error-message{
+        color: #fb833e;
+        font-size: 13px;
+    }
+    label {
+        display: inline-block;
+        margin-bottom: 1.5rem;
+    }
+    button, input, optgroup, select, textarea {
+    margin: 10px;
+}
+    
+    .btn{
+        background-color: var(--button-color);
+        border: none;
+        border-radius: 20px;
+        color: var(--branding-color);
+        padding: 10px 50px;
+        font-weight: 600;
+        display: block;
+        width: 100%;   
+        box-shadow: 0 0 5px var(--button-color);
+        display: inline-block;
+        margin: 0 auto;
+  
+    }
+    .btn:hover{
+        background-color: var(--secondary-color);
+        box-shadow: 0 0 5px rgba(250, 250, 250, 0.37);
+        color: var(--font-main-color);
+    }
+    .btn:active {
+        background-color: var(--button-color)!important;   
+        color: var(--branding-color);
+    }
+    .btn:focus {
+        background-color: var(--secondary-color);
+    }
+    .alert-info {
+        color: var(--font-main-color);
+        background-color: var(--secondary-color);
+        border-radius: 20px;   
+        border:none;
+        box-shadow: 0 0 5px rgba(250, 250, 250, 0.37);
+        margin-top: 25px;
+    }
+    .alert-info hr {
+        border-top-color: rgba(182, 182, 182, 0.24);
+        margin-bottom: 40px;
+    }
+        @media (max-width: 900px) {
+            h1 {
+                font-size: 30px;
+                margin-top: 30px;
+                margin-bottom: 30px;
+            }
+ 
+            .container {
+                width: 95%;
+                padding: 30px;
+                
+            }
+            audio {
+                width: 99%; 
+            }
+         
+            h4 {
+                font-size: 12px;
+                margin-bottom: 20px;
+            }
+            #error-message{
+                font-size: 11px;
+            }
+            .alert-info {
+                font-size: 14px;
+            }
+            label {
+                margin-bottom: 0.5rem;
+            }
+
+        }
+    </style>
+</head>
+<body>
+    <h1 class="text-center">Whisper ASR</h1>
+    <div class="container">
+        <div class="justify-content-center">
+            <div>
+                <h4>Upload an audio file up to 30 seconds</h4>
+                <form id="audio-upload-form" method="post" enctype="multipart/form-data" class="mb-3">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {{ form.audio.errors }}
+                    {{ form.audio.label_tag }} {{ form.audio }}
+                    <br>
+                    <audio id="audio-player" controls></audio>
+                    <br>
+                    <p id="error-message"></p>
+                    <button type="submit" class="btn btn-primary mt-2">Upload</button>
+                </form>
+                
+                {% if language and text %}
+                    <div class="alert alert-info">
+                        <h4 class="alert-heading">Results:</h4>
+                        <p>Detected language: {{ language }}</p>
+                        <hr>
+                        <p class="mb-0">Transcribed text: {{ text }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script>
+        const audioFileInput = document.getElementById("id_audio");
+        const audioPlayer = document.getElementById("audio-player");
+        const errorMessage = document.getElementById("error-message");
+        
+        audioFileInput.addEventListener("change", handleAudioFile);
+       
+        function handleAudioFile(event) {
+          const file = event.target.files[0];
+          if (file) {
+            const audio = new Audio(URL.createObjectURL(file));
+            audio.onloadedmetadata = () => {
+              if (audio.duration > 30) {
+                errorMessage.textContent = "Audio file duration should be less than 30 seconds.";
+                audioFileInput.value = null;
+                audioPlayer.src = "";
+              } else {
+                errorMessage.textContent = "";
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                  audioPlayer.src = reader.result;
+                };
+              }
+            };
+          }
+        }
+    </script>
+</body>
+</html>
+
