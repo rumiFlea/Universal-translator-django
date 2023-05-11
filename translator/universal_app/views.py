@@ -1,7 +1,9 @@
+from django.views.generic import FormView
 from django.urls import reverse_lazy
 from .forms import SpeechToTextForm
 import whisper
 import torch
+import subprocess
 
 class SpeechToTextView(FormView):
     template_name = 'index.html'
@@ -10,8 +12,8 @@ class SpeechToTextView(FormView):
 
     def form_valid(self, form):
         audio_file = form.cleaned_data['audio']
-        model = whisper.load_model("base")
-
+        model = whisper.load_model("medium")
+        
         file_path = "/tmp/" + str(audio_file)
         with open(file_path, 'wb+') as destination:
             for chunk in audio_file.chunks():
@@ -24,11 +26,21 @@ class SpeechToTextView(FormView):
         _, probs = model.detect_language(mel)
         language = max(probs, key=probs.get)
 
-        options = whisper.DecodingOptions(fp16=False)
-        result = whisper.decode(model, mel, options)
+        # Run whisper command with arguments for translation
+        command = ["whisper", file_path, "--language", language, "--task", "translate"]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Capture output and errors
+        output, error = process.communicate()
+        english_text = output.decode()
+
+        # Handle any errors
+        if process.returncode != 0:
+            print(f"Error: {error.decode()}")
+            english_text = "An error occurred during translation."
 
         context = self.get_context_data()
         context['language'] = language
-        context['text'] = result.text
+        context['text'] = english_text
 
         return self.render_to_response(context)
